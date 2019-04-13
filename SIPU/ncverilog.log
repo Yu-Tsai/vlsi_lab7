@@ -1,0 +1,12 @@
+ncverilog(64): 15.20-s039: (c) Copyright 1995-2017 Cadence Design Systems, Inc.
+TOOL:	ncverilog	15.20-s039: Started on Apr 13, 2019 at 17:00:56 CST
+ncverilog
+	top_tb.v
+Loading snapshot worklib.top_tb:v .................... Done
+*Verdi* Loading libsscore_ius152.so
+ncsim> source /usr/cad/cadence/INCISIV/cur/tools/inca/files/ncsimrc
+ncsim> run
+Simulation complete via $finish(1) at time 150 MS + 0
+./top_tb.v:131 	#150000000 $finish;
+ncsim> exit
+TOOL:	ncverilog	15.20-s039: Exiting on Apr 13, 2019 at 17:01:00 CST  (total: 00:00:04)

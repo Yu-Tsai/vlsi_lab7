@@ -20,7 +20,7 @@ module grayscale(clk,
 // ---------------------- output ---------------------- //  
   output reg[7:0]q;
 // --------------- below is your design --------------- //
-  reg [24:0]pixel;
+  reg [23:0]pixel;
   reg [15:0]q_tmp;
   
   always@(posedge clk or posedge rst) begin
@@ -33,7 +33,7 @@ module grayscale(clk,
   
   always@(*) begin
 	if(en) begin
-	  q_tmp = {(color[23:16]>>2), (color[23:16]<<6)} + {(color[23:16]>>4), (color[23:16]<<4)} + {(color[15:8]>>1), (color[15:8]<<7)} + {(color[15:8]>>4), (color[15:8]<<4)} + {(color[7:0]>>3), (color[7:0]<<5)};
+	  q_tmp = {(pixel[23:16]>>2), (pixel[23:16]<<6)} + {(pixel[23:16]>>4), (pixel[23:16]<<4)} + {(pixel[15:8]>>1), (pixel[15:8]<<7)} + {(pixel[15:8]>>4), (pixel[15:8]<<4)} + {(pixel[7:0]>>3), (pixel[7:0]<<5)};
 	end
   end
   

@@ -3,24 +3,24 @@
 //** Project: Simple image processor
 //**    			- controller
 //*************************************************
-`define S_reset 		4'd0
-`define S_in_mem 		4'd1
-`define S_grayscale 	4'd2
-`define S_write_back 	4'd3
-`define S_branch1 		4'd4
-`define S_FS_read_C		4'd5
-`define S_FS_read_R 	4'd6
-`define S_FS_read_LL	4'd7
-`define S_FS_read_LC	4'd8
-`define S_FS_read_LR	4'd9
-`define S_err_dif		4'd10
-`define S_FS_writeback_C 	4'd11
-`define S_FS_writeback_R 	4'd12
-`define S_FS_writeback_LL 	4'd13
-`define S_FS_writeback_LC 	4'd14
-`define S_FS_writeback_LR 	4'd15
-`define S_branch2 		4'd16
-`define S_done 		    4'd17
+`define S_reset 		5'd0
+`define S_in_mem 		5'd1
+`define S_grayscale 	5'd2
+`define S_write_back 	5'd3
+`define S_branch1 		5'd4
+`define S_FS_read_C		5'd5
+`define S_FS_read_R 	5'd6
+`define S_FS_read_LL	5'd7
+`define S_FS_read_LC	5'd8
+`define S_FS_read_LR	5'd9
+`define S_err_dif		5'd10
+`define S_FS_writeback_C 	5'd11
+`define S_FS_writeback_R 	5'd12
+`define S_FS_writeback_LL 	5'd13
+`define S_FS_writeback_LC 	5'd14
+`define S_FS_writeback_LR 	5'd15
+`define S_branch2 		5'd16
+`define S_done 		    5'd17
 /*`define S_FS_read 		4'd5
 `define S_err_dif		4'd6
 `define S_FS_writeback 	4'd7
@@ -86,7 +86,6 @@ module controller(clk,
       cstate <= nstate;
   end
 
-  //記得寫mux_sel!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   always @(*)begin
     case(cstate)
       `S_reset: begin
@@ -143,17 +142,17 @@ module controller(clk,
 		out_mem_read = 0;
 		out_mem_write = 0;
 		done = 0;
-		out_mem_addr = (nstate == `S_FS_read)?32'd0:(out_mem_addr+1);
+		out_mem_addr = (nstate == `S_FS_read_C)?32'd0:(out_mem_addr+1);
       end
       `S_FS_read_C: begin
 	    if(now_dif_pix < `width) begin
 		  nstate = `S_FS_read_R;
 		end
-		else if() begin
-		
+		else if(out_mem_addr == (`width - 1)) begin
+		  nstate = `S_err_dif;
 		end
 		else begin
-		
+		  nstate = `S_FS_read_LC;
 		end
         en_in_mem = 0;
 		en_gray = 0;
@@ -162,6 +161,41 @@ module controller(clk,
 		out_mem_read = 1;
 		out_mem_write = 0;
 		done = 0;
+      end
+      `S_FS_read_R: begin
+        if(out_mem_addr < (`width -1)) begin
+          nstate = `S_err_dif;
+	end
+	else begin
+          nstate = `S_FS_read_LR;
+	end
+	out_mem_addr = out_mem_addr + 1;
+	err_dif_addr = `Right;
+      end
+      `S_FS_read_LL: begin
+        nstate = `S_err_dif;
+	out_mem_addr = out_mem_addr - 1;
+	err_dif_addr = `LowL;
+      end
+      `S_FS_read_LC: begin
+        if(now_dif_pix == 1) begin
+          nstate = `S_err_dif;
+	end
+	else begin
+          nstate = `S_FS_read_LL;
+	end
+	if(err_dif_addr == `Cen) begin
+          out_mem_addr = out_mem_addr - `width;
+	end
+	else begin
+          out_mem_addr = out_mem_addr -1;
+	end
+        err_dif_addr = `LowC;
+      end
+      `S_FS_read_LR: begin
+        nstate = `S_FS_read_LC;
+	err_dif_addr = `LowR;
+	out_mem_addr = out_mem_addr - `width;
       end
       `S_err_dif: begin
         en_in_mem = 0;
@@ -172,7 +206,7 @@ module controller(clk,
 		out_mem_write = 0;
 		done = 0;
       end
-      `S_FS_writeback: begin
+      `S_FS_writeback_C: begin
         en_in_mem = 0;
 		en_gray = 0;
 		en_err_dif = 0;
@@ -199,9 +233,9 @@ module controller(clk,
 		out_mem_write = 0;
 		done = 1;
       end
-	  default: begin
+	  /*default: begin
 	    
-	  end
+	  end*/
     endcase
   end
   
