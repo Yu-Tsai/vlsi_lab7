@@ -1,0 +1,3 @@
+gray: color
+error: C...
+con: define 5'
