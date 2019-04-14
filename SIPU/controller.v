@@ -163,41 +163,48 @@ module controller(clk,
 		done = 0;
       end
       `S_FS_read_R: begin
-        if(out_mem_addr < (`width -1)) begin
-          nstate = `S_err_dif;
-	end
-	else begin
-          nstate = `S_FS_read_LR;
-	end
-	out_mem_addr = out_mem_addr + 1;
-	err_dif_addr = `Right;
+      if(out_mem_addr < (`width -1)) begin
+        nstate = `S_err_dif;
+	  end
+	  else begin
+        nstate = `S_FS_read_LR;
+	  end
+	    out_mem_addr = out_mem_addr + 1;
+	    err_dif_addr = `Right;
       end
       `S_FS_read_LL: begin
         nstate = `S_err_dif;
-	out_mem_addr = out_mem_addr - 1;
-	err_dif_addr = `LowL;
+	    out_mem_addr = out_mem_addr - 1;
+	    err_dif_addr = `LowL;
       end
       `S_FS_read_LC: begin
-        if(now_dif_pix == 1) begin
-          nstate = `S_err_dif;
-	end
-	else begin
-          nstate = `S_FS_read_LL;
-	end
-	if(err_dif_addr == `Cen) begin
-          out_mem_addr = out_mem_addr - `width;
-	end
-	else begin
-          out_mem_addr = out_mem_addr -1;
-	end
+      if(now_dif_pix == 1) begin
+        nstate = `S_err_dif;
+	  end
+	  else begin
+        nstate = `S_FS_read_LL;
+	  end
+	  if(err_dif_addr == `Cen) begin
+        out_mem_addr = out_mem_addr - `width;
+	  end
+	  else begin
+        out_mem_addr = out_mem_addr -1;
+	  end
         err_dif_addr = `LowC;
       end
       `S_FS_read_LR: begin
         nstate = `S_FS_read_LC;
-	err_dif_addr = `LowR;
-	out_mem_addr = out_mem_addr - `width;
+	    err_dif_addr = `LowR;
+	    out_mem_addr = out_mem_addr - `width;
       end
       `S_err_dif: begin
+	    case(err_dif_addr)
+		  `Cen: nstate = `S_FS_writeback_C;
+		  `Right: nstate = `S_FS_writeback_R;
+		  `LowC: nstate = `S_FS_writeback_LC;
+		  `LowL: nstate = `S_FS_writeback_LL;
+		  default: nstate = `S_FS_writeback_C;
+		endcase
         en_in_mem = 0;
 		en_gray = 0;
 		en_err_dif = 1;
@@ -207,6 +214,13 @@ module controller(clk,
 		done = 0;
       end
       `S_FS_writeback_C: begin
+	    case(err_dif_addr)
+		  `LowC: out_mem_addr = out_mem_addr + `width;
+		  `Right: out_mem_addr = out_mem_addr - 1;
+		  default: out_mem_addr = out_mem_addr;
+		endcase
+		nstate = `S_branch2;
+		err_dif_addr = `Cen;
         en_in_mem = 0;
 		en_gray = 0;
 		en_err_dif = 0;
@@ -214,8 +228,62 @@ module controller(clk,
 		out_mem_read = 0;
 		out_mem_write = 1;
 		done = 0;
+		mux_sel = 1;
       end
+	  `S_FS_writeback_R: begin
+	    if(err_dif_addr == `LowR) out_mem_addr = out_mem_addr + `width;
+		else out_mem_addr = out_mem_addr;
+		nstate = `S_FS_writeback_C;
+		err_dif_addr = `Right;
+	    en_in_mem = 0;
+		en_gray = 0;
+		en_err_dif = 0;
+		en_out_mem = 1;
+		out_mem_read = 0;
+		out_mem_write = 1;
+		done = 0;
+	    mux_sel = 1;
+	  end
+	  `S_FS_writeback_LL: begin
+	    nstate = `S_FS_writeback_LC;
+		en_in_mem = 0;
+		en_gray = 0;
+		en_err_dif = 0;
+		en_out_mem = 1;
+		out_mem_read = 0;
+		out_mem_write = 1;
+		done = 0;
+	    mux_sel = 1;
+	  end
+	  `S_FS_writeback_LC: begin
+	    if(err_dif_addr == `LowL) out_mem_addr = out_mem_addr + 1;
+		else out_mem_addr = out_mem_addr;
+        if(now_dif_pix < `width) nstate = `S_FS_writeback_LR;
+        else nstate = `S_FS_writeback_C;
+        err_dif_addr = `LowC;		
+	    en_in_mem = 0;
+		en_gray = 0;
+		en_err_dif = 0;
+		en_out_mem = 1;
+		out_mem_read = 0;
+		out_mem_write = 1;
+		done = 0;
+		mux_sel = 1;
+	  end
+	  `S_FS_writeback_LR: begin
+	    nstate = `Right;
+		err_dif_addr = `LowR;
+		out_mem_addr = out_mem_addr + 1;
+	  end
       `S_branch2: begin
+	    if(out_mem_addr == (`size-1)) nstate = `S_done;
+		else begin
+		  if(now_dif_pix < `width) now_dif_pix = now_dif_pix + 1;
+		  else now_dif_pix = 12'd1;
+		  nstate = `S_FS_read_C;
+		  err_dif_addr = `Cen;
+		  out_mem_addr = out_mem_addr + 1;
+		end
         en_in_mem = 0;
 		en_gray = 0;
 		en_err_dif = 0;
@@ -233,9 +301,7 @@ module controller(clk,
 		out_mem_write = 0;
 		done = 1;
       end
-	  /*default: begin
-	    
-	  end*/
+	  default: 
     endcase
   end
   
